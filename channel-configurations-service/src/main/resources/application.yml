@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: channel-configurations-service
+  
+  datasource:
+    url: jdbc:h2:mem:channeldb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    defer-datasource-initialization: true
+  
+  sql:
+    init:
+      mode: always
+
+# Server configuration
+server:
+  port: 8082
+
+# Springdoc OpenAPI configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.banking: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
