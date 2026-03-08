@@ -1,0 +1,15 @@
+# Private keys - must never be committed to version control
+src/main/resources/keys/
+
+# Maven build artifacts
+target/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db

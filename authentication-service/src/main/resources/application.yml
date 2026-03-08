@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: authentication-service
+
+server:
+  port: 8081
+
+# Springdoc OpenAPI configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+    filter: false
+    syntaxHighlight:
+      activated: true
+
+logging:
+  level:
+    root: INFO
+    com.banking: DEBUG
+
+app:
+  jwt:
+    private-key-path: classpath:keys/private_key.pem
+    public-key-path: classpath:keys/public_key.pem
+    expiration: 3600  # 1 hour in seconds
+    issuer: banking-auth-service

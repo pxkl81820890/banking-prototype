@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Authentication Service API
+  description: |
+    JWT token generation service for multi-entity banking platform.
+    Generates RS256-signed JWT tokens with custom claims for bank, branch, and currency context.
+  version: 1.0.0
+  contact:
+    name: Banking Platform Team
+
+servers:
+  - url: http://localhost:8081
+    description: Local development server
+  - url: https://auth.banking.example.com
+    description: Production server
+
+tags:
+  - name: Token Management
+    description: JWT token generation operations
+
+paths:
+  /api/v1/auth/generate-token:
+    post:
+      tags:
+        - Token Management
+      summary: Generate JWT token
+      description: |
+        Generates a stateless JWT token signed with RS256 algorithm.
+        Token includes custom claims for multi-entity banking context (bank, branch, currency).
+      operationId: generateToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+            examples:
+              validRequest:
+                summary: Valid token generation request
+                value:
+                  userId: "user-uuid-123"
+                  bankCode: "101"
+                  branchCode: "1119"
+                  currency: "SGD"
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                successfulGeneration:
+                  summary: Successful token generation
+                  value:
+                    success: true
+                    token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLXV1aWQtMTIzIiwiYm5rIjoiMTAxIiwiYnJuIjoiMTExOSIsImN1ciI6IlNHRCIsImlhdCI6MTY0MDAwMDAwMCwiZXhwIjoxNjQwMDAzNjAwfQ.signature"
+                    message: "Token generated successfully"
+                    expiresIn: 3600
+        '400':
+          description: Bad request - Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingUserId:
+                  summary: Missing userId
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "userId is required"
+                    path: "/api/v1/auth/generate-token"
+                invalidBankCode:
+                  summary: Invalid bankCode
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "bankCode cannot be null or blank"
+                    path: "/api/v1/auth/generate-token"
+        '500':
+          description: Internal server error - Token generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                keyLoadError:
+                  summary: Private key loading error
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 500
+                    error: "Internal Server Error"
+                    message: "Failed to load private key"
+                    path: "/api/v1/auth/generate-token"
+
+components:
+  schemas:
+    TokenRequest:
+      type: object
+      required:
+        - userId
+        - bankCode
+        - branchCode
+        - currency
+      properties:
+        userId:
+          type: string
+          description: Unique user identifier (UUID)
+          example: "user-uuid-123"
+          minLength: 1
+        bankCode:
+          type: string
+          description: 3-digit bank code
+          example: "101"
+          pattern: '^\d{3}$'
+          minLength: 1
+        branchCode:
+          type: string
+          description: 4-digit branch code
+          example: "1119"
+          pattern: '^\d{4}$'
+          minLength: 1
+        currency:
+          type: string
+          description: Currency code (ISO 4217)
+          example: "SGD"
+          pattern: '^[A-Z]{3}$'
+          minLength: 1
+    
+    TokenResponse:
+      type: object
+      required:
+        - success
+        - token
+        - message
+        - expiresIn
+      properties:
+        success:
+          type: boolean
+          description: Indicates if token generation was successful
+          example: true
+        token:
+          type: string
+          description: |
+            RS256-signed JWT token with custom claims:
+            - sub: userId
+            - bnk: bankCode
+            - brn: branchCode
+            - cur: currency
+            - iat: issued at timestamp
+            - exp: expiration timestamp
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Token generated successfully"
+        expiresIn:
+          type: integer
+          format: int64
+          description: Token expiration time in seconds
+          example: 3600
+    
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-15T10:30:00Z"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: "Bad Request"
+        message:
+          type: string
+          description: Detailed error message
+          example: "userId is required"
+        path:
+          type: string
+          description: Request path that caused the error
+          example: "/api/v1/auth/generate-token"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication (not required for token generation endpoint)
