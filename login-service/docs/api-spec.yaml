@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: Login Service API
+  description: |
+    Multi-entity banking login service that handles user authentication with bank, branch, and currency context.
+    Follows hexagonal architecture principles with domain-driven design.
+  version: 1.0.0
+  contact:
+    name: Banking Platform Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.banking.example.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+
+paths:
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticates a user with multi-entity context (bank, branch, currency).
+        Returns a JWT token upon successful authentication.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              validLogin:
+                summary: Valid login request
+                value:
+                  bankCode: "101"
+                  branchCode: "1119"
+                  username: "john.doe"
+                  password: "securePassword123"
+                  currency: "SGD"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                successfulLogin:
+                  summary: Successful login
+                  value:
+                    success: true
+                    userId: "user-uuid-123"
+                    message: "Login successful"
+                    token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Bad request - Currency mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                currencyMismatch:
+                  summary: Currency mismatch error
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Currency mismatch: expected USD but got SGD"
+                    path: "/api/v1/auth/login"
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid credentials
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 401
+                    error: "Unauthorized"
+                    message: "Invalid credentials"
+                    path: "/api/v1/auth/login"
+        '404':
+          description: Not found - Invalid entity (bank/branch/username combination)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEntity:
+                  summary: Invalid entity
+                  value:
+                    timestamp: "2024-01-15T10:30:00Z"
+                    status: 404
+                    error: "Not Found"
+                    message: "Invalid entity: Bank 101, Branch 1119 not found"
+                    path: "/api/v1/auth/login"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - bankCode
+        - branchCode
+        - username
+        - password
+        - currency
+      properties:
+        bankCode:
+          type: string
+          description: 3-digit bank code
+          example: "101"
+          pattern: '^\d{3}$'
+        branchCode:
+          type: string
+          description: 4-digit branch code
+          example: "1119"
+          pattern: '^\d{4}$'
+        username:
+          type: string
+          description: User's login username
+          example: "john.doe"
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          description: User's password
+          format: password
+          example: "securePassword123"
+          minLength: 8
+        currency:
+          type: string
+          description: Currency code (ISO 4217)
+          example: "SGD"
+          pattern: '^[A-Z]{3}$'
+    
+    LoginResponse:
+      type: object
+      required:
+        - success
+        - userId
+        - message
+        - token
+      properties:
+        success:
+          type: boolean
+          description: Indicates if login was successful
+          example: true
+        userId:
+          type: string
+          description: Unique user identifier (UUID)
+          example: "user-uuid-123"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Login successful"
+        token:
+          type: string
+          description: JWT authentication token
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+    
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-15T10:30:00Z"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: "Bad Request"
+        message:
+          type: string
+          description: Detailed error message
+          example: "Currency mismatch"
+        path:
+          type: string
+          description: Request path that caused the error
+          example: "/api/v1/auth/login"
